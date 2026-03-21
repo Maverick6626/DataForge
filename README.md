@@ -31,7 +31,7 @@ http://localhost:8000
 The first build takes 3–5 minutes while Docker downloads Python and installs packages.
 Every subsequent start takes a few seconds.
 
-Alternatively, Windows users can simply double-click the start.bat file to run the application
+Alternatively, Windows users can simply double-click the `start.bat` file to run the application
 
 ---
 
