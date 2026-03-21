@@ -1,0 +1,14 @@
+# DataForge — Python dependencies
+# Python 3.9+ recommended; 3.8 minimum
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+scikit-learn>=1.1.0
+pandas>=1.5.0
+numpy>=1.23.0
+scipy>=1.9.0
+joblib>=1.2.0
+python-multipart>=0.0.6
+# Optional boosters (installed separately by start script, skipped if incompatible)
+# xgboost>=1.7.0
+# lightgbm>=3.3.0
+# catboost>=1.1.0

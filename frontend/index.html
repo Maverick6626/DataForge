@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataForge — AutoML Platform</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="toasts"></div>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-eyebrow">AutoML Platform</div>
+      <div class="brand-name">Data<span>Forge</span></div>
+    </div>
+    <div class="sidebar-steps">
+      <div class="step-group-label">Data</div>
+      <button class="step-link active" id="nav-import"   onclick="goTo('import')">  <div class="step-icon">1</div><div><div class="step-name">Import</div>  <div class="step-sub">Load dataset</div></div></button>
+      <button class="step-link"        id="nav-clean"    onclick="goTo('clean')">   <div class="step-icon">2</div><div><div class="step-name">Clean</div>   <div class="step-sub">Fix missing &amp; outliers</div></div></button>
+      <button class="step-link"        id="nav-eda"      onclick="goTo('eda')">     <div class="step-icon">3</div><div><div class="step-name">Explore</div> <div class="step-sub">EDA · Risks · Compare</div></div></button>
+      <div class="step-group-label">Modelling</div>
+      <button class="step-link"        id="nav-features" onclick="goTo('features')"><div class="step-icon">4</div><div><div class="step-name">Features</div><div class="step-sub">Select &amp; encode</div></div></button>
+      <button class="step-link"        id="nav-model"    onclick="goTo('model')">   <div class="step-icon">5</div><div><div class="step-name">Models</div>  <div class="step-sub">Configure algorithms</div></div></button>
+      <button class="step-link"        id="nav-train"    onclick="goTo('train')">   <div class="step-icon">6</div><div><div class="step-name">Train</div>   <div class="step-sub">Run pipeline</div></div></button>
+      <div class="step-group-label">Evaluation</div>
+      <button class="step-link"        id="nav-results"  onclick="goTo('results')"> <div class="step-icon">7</div><div><div class="step-name">Results</div> <div class="step-sub">Compare &amp; analyse</div></div></button>
+      <button class="step-link"        id="nav-predict"  onclick="goTo('predict')"> <div class="step-icon">8</div><div><div class="step-name">Predict</div> <div class="step-sub">Run inference</div></div></button>
+      <button class="step-link"        id="nav-deploy"   onclick="goTo('deploy')">  <div class="step-icon">9</div><div><div class="step-name">Deploy</div>  <div class="step-sub">Publish &amp; share</div></div></button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="api-badge"><div class="api-dot" id="api-dot"></div><span id="api-status">Connecting…</span></div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-crumb"><span>DataForge</span><span style="color:var(--line-2)">&rsaquo;</span><span class="active" id="topbar-page">Import</span></div>
+      </div>
+      <div class="topbar-actions">
+        <span class="session-chip hidden" id="session-chip">—</span>
+        <button class="btn btn-ghost btn-sm" onclick="resetAll()">↺ Reset</button>
+      </div>
+    </div>
+
+    <div class="hidden" id="session-bar"><div class="session-bar" id="session-bar-inner"></div></div>
+
+    <div class="page-content">
+
+      <!-- PAGE 1: IMPORT -->
+      <div class="page-view active" id="page-import">
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="page-eyebrow">Step 01</div>
+            <div class="page-title">Import Dataset</div>
+            <div class="page-desc">Upload a CSV, paste raw data, or load a built-in sample.</div>
+          </div>
+        </div>
+        <div id="import-ui">
+          <div class="card accent"><div class="card-body">
+            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-in').click()">
+              <span class="drop-icon">&#128194;</span>
+              <div class="drop-title">Drop your CSV file here</div>
+              <div class="drop-sub">or click to browse &middot; CSV only</div>
+            </div>
+            <input type="file" id="file-in" accept=".csv" style="display:none">
+          </div></div>
+          <div class="divider-label">or paste raw CSV</div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><div class="card-icon">&#9000;</div>Paste CSV</div></div>
+            <div class="card-body">
+              <textarea id="csv-paste" rows="5" placeholder="col1,col2,target&#10;1.2,red,0&#10;3.4,blue,1"></textarea>
+              <div class="flex-center gap-8 mt-12"><button class="btn btn-secondary" onclick="loadPasted()">Load Pasted Data</button></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><div class="card-icon">&#129514;</div>Sample Datasets</div></div>
+            <div class="card-body"><div class="grid-4" style="gap:10px">
+              <div class="result-card" style="cursor:pointer" onclick="loadSample('iris')">
+                <div style="font-size:22px">&#127800;</div>
+                <div style="font-weight:700;font-family:var(--font-display)">Iris</div>
+                <div class="text-xs text-muted mt-4">150 rows &middot; 4 features</div>
+                <span class="badge badge-amber mt-8" style="display:inline-flex">Classification</span>
+              </div>
+              <div class="result-card" style="cursor:pointer" onclick="loadSample('diabetes')">
+                <div style="font-size:22px">&#127973;</div>
+                <div style="font-weight:700;font-family:var(--font-display)">Diabetes</div>
+                <div class="text-xs text-muted mt-4">442 rows &middot; 10 features</div>
+                <span class="badge badge-cyan mt-8" style="display:inline-flex">Regression</span>
+              </div>
+              <div class="result-card" style="cursor:pointer" onclick="loadSample('california')">
+                <div style="font-size:22px">&#127968;</div>
+                <div style="font-weight:700;font-family:var(--font-display)">CA Housing</div>
+                <div class="text-xs text-muted mt-4">20k rows &middot; 8 features</div>
+                <span class="badge badge-cyan mt-8" style="display:inline-flex">Regression</span>
+              </div>
+              <div class="result-card" style="cursor:pointer" onclick="loadSample('wine')">
+                <div style="font-size:22px">&#127863;</div>
+                <div style="font-weight:700;font-family:var(--font-display)">Wine</div>
+                <div class="text-xs text-muted mt-4">178 rows &middot; 13 features</div>
+                <span class="badge badge-amber mt-8" style="display:inline-flex">Classification</span>
+              </div>
+            </div></div>
+          </div>
+        </div>
+        <div class="hidden" id="import-preview">
+          <div class="grid-4 mb-16">
+            <div class="stat-card"><div class="stat-label">Rows</div><div class="stat-value amber" id="stat-rows">—</div></div>
+            <div class="stat-card"><div class="stat-label">Columns</div><div class="stat-value" id="stat-cols">—</div></div>
+            <div class="stat-card"><div class="stat-label">Missing</div><div class="stat-value rose" id="stat-missing">—</div></div>
+            <div class="stat-card"><div class="stat-label">Memory</div><div class="stat-value" id="stat-mem">—</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon">&#128065;</div>Preview</div>
+              <button class="btn btn-ghost btn-sm" onclick="resetImport()">Load different file</button>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div class="table-wrap" style="max-height:300px;overflow-y:auto;border:none;border-radius:0"><table class="data-table" id="preview-tbl"></table></div>
+            </div>
+            <div class="card-footer">
+              <span class="text-xs text-muted text-mono">First 10 rows &middot; <span id="preview-total">—</span></span>
+              <div id="col-tags" class="tag-list" style="max-width:500px;overflow:hidden;margin-left:auto"></div>
+            </div>
+          </div>
+          <div style="margin-top:16px"><button class="btn btn-primary btn-lg" onclick="goTo('clean')">Continue to Cleaning &rarr;</button></div>
+        </div>
+      </div>
+
+      <!-- PAGE 2: CLEAN -->
+      <div class="page-view hidden" id="page-clean">
+        <div class="page-header">
+          <div class="page-header-left"><div class="page-eyebrow">Step 02</div><div class="page-title">Clean Data</div><div class="page-desc">Handle missing values, outliers, and low-quality columns.</div></div>
+          <button class="btn btn-ghost" onclick="goTo('eda')">Skip &rarr;</button>
+        </div>
+        <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#9888;&#65039;</div>Missing Values</div></div><div class="card-body" id="missing-analysis"><p class="text-muted text-sm">Load a dataset first.</p></div></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><div class="card-icon">&#128295;</div>Imputation</div></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+              <div class="form-group"><label>Numeric Columns</label><select id="num-impute"><option value="mean">Mean (recommended)</option><option value="median">Median</option><option value="most_frequent">Most Frequent</option><option value="drop_rows">Drop Rows</option><option value="none">Leave As-Is</option></select></div>
+              <div class="form-group"><label>Categorical Columns</label><select id="cat-impute"><option value="most_frequent">Most Frequent (recommended)</option><option value="constant">Fill with "unknown"</option><option value="drop_rows">Drop Rows</option><option value="none">Leave As-Is</option></select></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><div class="card-icon">&#128208;</div>Outliers</div></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+              <div class="form-group"><label>Detection Method</label><select id="outlier-method"><option value="none">None</option><option value="iqr">IQR (1.5x fence)</option><option value="zscore">Z-Score (threshold 3)</option><option value="clip_percentile">Clip to 1st-99th percentile</option></select></div>
+              <div class="form-group"><label>Action</label><select id="outlier-action"><option value="remove">Remove rows</option><option value="clip">Clip values</option></select></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#128465;</div>Drop Columns</div></div>
+          <div class="card-body">
+            <div class="form-group mb-16"><label>Auto-drop if missing % above</label><div class="range-wrap"><input type="range" id="drop-thresh" min="0" max="100" value="80" oninput="document.getElementById('drop-thresh-val').textContent=this.value+'%'"><span class="range-val" id="drop-thresh-val">80%</span></div></div>
+            <label style="display:block;margin-bottom:10px">Manual drop (click to toggle)</label>
+            <div class="tag-list" id="manual-drop-list"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#9654;</div>Run Cleaning</div></div>
+          <div class="card-body"><div class="console"><div class="console-header"><div class="console-dot"></div><div class="console-dot"></div><div class="console-dot"></div><span class="console-title">cleaning.log</span></div><div class="console-body" id="clean-log" style="height:180px"><span class="log dim">Waiting…</span></div></div></div>
+          <div class="card-footer"><button class="btn btn-primary" onclick="runClean()">Apply Cleaning</button><button class="btn btn-ghost" onclick="goTo('eda')">Skip</button></div>
+        </div>
+      </div>
+
+      <!-- PAGE 3: EDA -->
+      <div class="page-view hidden" id="page-eda">
+        <div class="page-header">
+          <div class="page-header-left"><div class="page-eyebrow">Step 03</div><div class="page-title">Explore Data</div><div class="page-desc">Statistics, distributions, correlations, and data quality risks.</div></div>
+          <button class="btn btn-primary" onclick="goTo('features')">Next: Features &rarr;</button>
+        </div>
+        <div class="grid-4 mb-16" id="eda-stats"></div>
+        <div class="eda-tabs">
+          <div class="eda-tab active" onclick="edaTab('overview')">Overview</div>
+          <div class="eda-tab" onclick="edaTab('risks')">&#9888; Risks</div>
+          <div class="eda-tab" onclick="edaTab('column')">Column Drill-down</div>
+          <div class="eda-tab" onclick="edaTab('compare')">2-Column Compare</div>
+          <div class="eda-tab" onclick="edaTab('correlations')">Correlations</div>
+        </div>
+        <div class="eda-panel active" id="eda-overview">
+          <div class="grid-2">
+            <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#128202;</div>Column Types</div></div><div class="card-body"><div style="height:200px"><canvas id="type-chart"></canvas></div></div></div>
+            <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#128293;</div>Missing Values</div></div><div class="card-body" id="miss-heatmap"></div></div>
+          </div>
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#128203;</div>Descriptive Statistics</div></div><div class="card-body" style="padding:0"><div class="table-wrap" style="border:none;border-radius:0;max-height:320px;overflow-y:auto"><table class="data-table" id="stats-tbl"></table></div></div></div>
+        </div>
+        <div class="eda-panel" id="eda-risks">
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#128269;</div>Data Quality Report</div><span class="text-xs text-muted" id="risk-summary"></span></div><div class="card-body" id="risks-list"><p class="text-muted text-sm">Loading…</p></div></div>
+        </div>
+        <div class="eda-panel" id="eda-column">
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#128302;</div>Column Inspector</div></div>
+            <div class="card-body">
+              <div class="form-row" style="margin-bottom:16px">
+                <div class="form-group"><label>Select Column</label><select id="drill-col" onchange="drillColumn()"></select></div>
+                <div class="form-group">
+                  <label>Treat column as</label>
+                  <select id="drill-treat-as" onchange="drillColumn()">
+                    <option value="">Auto-detect</option>
+                    <option value="numeric">Force Numeric</option>
+                    <option value="categorical">Force Categorical</option>
+                  </select>
+                </div>
+              </div>
+              <div id="drill-result"></div>
+            </div>
+          </div>
+        </div>
+        <div class="eda-panel" id="eda-compare">
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#9878;</div>Column Comparison</div></div>
+            <div class="card-body">
+              <div class="form-row" style="margin-bottom:8px">
+                <div class="form-group"><label>Column A</label><select id="cmp-a"></select></div>
+                <div class="form-group"><label>Treat A as</label>
+                  <select id="cmp-treat-a">
+                    <option value="">Auto-detect</option>
+                    <option value="numeric">Force Numeric</option>
+                    <option value="categorical">Force Categorical</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row" style="margin-bottom:16px">
+                <div class="form-group"><label>Column B</label><select id="cmp-b"></select></div>
+                <div class="form-group"><label>Treat B as</label>
+                  <select id="cmp-treat-b">
+                    <option value="">Auto-detect</option>
+                    <option value="numeric">Force Numeric</option>
+                    <option value="categorical">Force Categorical</option>
+                  </select>
+                </div>
+              </div>
+              <button class="btn btn-secondary" onclick="runCompare()">Compare &rarr;</button>
+              <div id="compare-result" class="mt-16"></div>
+            </div>
+          </div>
+        </div>
+        <div class="eda-panel" id="eda-correlations">
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#128279;</div>Correlation Matrix</div></div><div class="card-body" id="corr-matrix" style="overflow-x:auto"></div></div>
+        </div>
+      </div>
+
+      <!-- PAGE 4: FEATURES -->
+      <div class="page-view hidden" id="page-features">
+        <div class="page-header"><div class="page-header-left"><div class="page-eyebrow">Step 04</div><div class="page-title">Feature Setup</div><div class="page-desc">Choose target, select features, configure preprocessing.</div></div></div>
+        <div class="grid-2">
+          <div class="card accent">
+            <div class="card-header"><div class="card-title"><div class="card-icon">&#127919;</div>Target Variable</div></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+              <div class="form-group"><label>Target Column</label><select id="target-col" onchange="onTargetChange()"></select></div>
+              <div class="form-group"><label>Task Type</label><select id="task-type" onchange="onTargetChange()"><option value="auto">Auto-detect (smart, recommended)</option><option value="classification">Classification</option><option value="regression">Regression</option></select></div>
+              <div id="task-hint" class="text-xs text-muted"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><div class="card-icon">&#9879;&#65039;</div>Preprocessing</div></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+              <div class="form-group"><label>Numeric Scaling</label><select id="scaling"><option value="standard">StandardScaler (Z-score)</option><option value="minmax">MinMaxScaler (0-1)</option><option value="robust">RobustScaler (IQR)</option><option value="none">None</option></select></div>
+              <div class="form-group"><label>Categorical Encoding</label><select id="encoding"><option value="onehot">One-Hot Encoding</option><option value="ordinal">Ordinal Encoding</option></select></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#128230;</div>Input Features</div><div class="flex-center gap-8"><button class="btn btn-ghost btn-sm" onclick="selectAllFeatures(true)">All</button><button class="btn btn-ghost btn-sm" onclick="selectAllFeatures(false)">None</button></div></div>
+          <div class="card-body"><div class="feature-grid" id="feature-grid"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#128256;</div>Train / Test Split</div></div>
+          <div class="card-body"><div class="form-row-3">
+            <div class="form-group"><label>Test Size</label><select id="test-size"><option value="0.15">85 / 15</option><option value="0.2" selected>80 / 20</option><option value="0.25">75 / 25</option><option value="0.3">70 / 30</option></select></div>
+            <div class="form-group"><label>Random Seed</label><input type="number" id="rand-seed" value="42"></div>
+            <div class="form-group"><label>Cross-Validation</label><select id="cv-folds"><option value="none">None (single split)</option><option value="3">3-Fold</option><option value="5">5-Fold</option><option value="10">10-Fold</option></select></div>
+          </div></div>
+          <div class="card-footer"><button class="btn btn-primary" onclick="goTo('model')">Continue to Models &rarr;</button></div>
+        </div>
+      </div>
+
+      <!-- PAGE 5: MODELS -->
+      <div class="page-view hidden" id="page-model">
+        <div class="page-header"><div class="page-header-left"><div class="page-eyebrow">Step 05</div><div class="page-title">Select Models</div><div class="page-desc">AutoSelect tries all models and picks the best. Or hand-pick your own.</div></div></div>
+        <div class="card accent">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#129302;</div>Mode</div></div>
+          <div class="card-body"><div class="chip-group"><span class="chip on" id="chip-auto" onclick="setModelMode('auto')">&#128640; AutoSelect</span><span class="chip" id="chip-manual" onclick="setModelMode('manual')">&#127741; Manual</span></div><p class="text-sm text-muted mt-12" id="mode-hint">AutoSelect trains every compatible model and selects the best by CV score.</p></div>
+        </div>
+        <div class="hidden" id="manual-section">
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#127741;</div>Choose Models</div><div class="flex-center gap-8"><button class="btn btn-ghost btn-sm" onclick="selectAllModels(true)">All</button><button class="btn btn-ghost btn-sm" onclick="selectAllModels(false)">Clear</button></div></div><div class="card-body"><div class="model-grid" id="model-grid"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#9881;&#65039;</div>Tuning</div></div>
+          <div class="card-body"><div class="form-row">
+            <div class="form-group"><label>Strategy</label><select id="tuning"><option value="default">Default Parameters (fastest)</option><option value="random">Random Search</option><option value="grid">Grid Search</option></select></div>
+            <div class="form-group"><label>Iterations (Random Search)</label><input type="number" id="tuning-n" value="30" min="5" max="200"></div>
+            <div class="form-group"><label>Primary Metric</label><select id="scoring"><option value="auto">Auto (task-based)</option><option value="accuracy">Accuracy</option><option value="f1_weighted">F1 Weighted</option><option value="roc_auc_ovr">ROC-AUC</option><option value="r2">R²</option><option value="neg_root_mean_squared_error">RMSE</option><option value="neg_mean_absolute_error">MAE</option></select></div>
+            <div class="form-group"><label>Parallel Jobs</label><select id="n-jobs"><option value="-1">All CPU cores</option><option value="1">1</option><option value="2">2</option><option value="4">4</option></select></div>
+          </div></div>
+          <div class="card-footer"><button class="btn btn-primary" onclick="goTo('train')">Continue to Training &rarr;</button></div>
+        </div>
+      </div>
+
+      <!-- PAGE 6: TRAIN -->
+      <div class="page-view hidden" id="page-train">
+        <div class="page-header"><div class="page-header-left"><div class="page-eyebrow">Step 06</div><div class="page-title">Train Models</div><div class="page-desc">Review configuration then launch training with live streaming logs.</div></div></div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#128203;</div>Configuration</div></div>
+          <div class="card-body"><div class="grid-4" id="train-config-stats"></div></div>
+          <div class="card-body" style="padding:12px 22px"><table class="data-table" id="train-config-tbl" style="border:none"></table></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#9889;</div>Training Console</div><div class="flex-center gap-8"><div class="spinner hidden" id="train-spinner"></div></div></div>
+          <div class="card-body"><div class="console"><div class="console-header"><div class="console-dot"></div><div class="console-dot"></div><div class="console-dot"></div><span class="console-title">training.log — <span id="console-model-name">—</span></span></div><div class="console-body" id="train-log" style="height:260px"><span class="log dim">Press Start Training…</span></div></div></div>
+          <div class="card-body" style="padding:12px 22px">
+            <div class="flex-between mb-8"><span class="text-xs text-mono text-muted" id="progress-label">—</span><span class="text-xs text-mono text-amber" id="progress-pct">0%</span></div>
+            <div class="progress-track" style="height:7px"><div class="progress-fill" id="train-progress" style="width:0%"></div></div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-primary btn-lg" id="train-btn" onclick="startTraining()">&#9654; Start Training</button>
+            <button class="btn btn-danger hidden" id="stop-btn" onclick="stopTraining()">&#9632; Stop</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE 7: RESULTS -->
+      <div class="page-view hidden" id="page-results">
+        <div class="page-header">
+          <div class="page-header-left"><div class="page-eyebrow">Step 07</div><div class="page-title">Results</div><div class="page-desc">Compare models, inspect metrics, download the best model.</div></div>
+          <div class="flex-center gap-8">
+            <button class="btn btn-secondary" onclick="downloadDataset()">&#11015; Dataset CSV</button>
+            <button class="btn btn-secondary" id="dl-model-btn" onclick="downloadModel()" disabled>&#11015; Download Model</button>
+            <button class="btn btn-secondary" onclick="downloadReport()">&#11015; Report</button>
+            <button class="btn btn-primary" onclick="goTo('predict')">Try Predictions &rarr;</button>
+          </div>
+        </div>
+        <div class="card accent" id="best-hero"></div>
+        <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#127942;</div>Leaderboard</div></div><div class="card-body" style="padding:0"><div class="table-wrap" style="border:none;border-radius:0"><table class="data-table" id="results-tbl"></table></div></div></div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#128202;</div>Score Comparison</div></div><div class="card-body"><div style="height:260px"><canvas id="score-chart"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#128204;</div>Feature Importance</div><span class="text-xs text-muted" id="fi-model-name"></span></div><div class="card-body"><div style="height:260px"><canvas id="fi-chart"></canvas></div></div></div>
+        </div>
+        <div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#128302;</div>Detailed Metrics — Best Model</div></div><div class="card-body" id="detail-metrics"></div></div>
+      </div>
+
+      <!-- PAGE 8: PREDICT -->
+      <div class="page-view hidden" id="page-predict">
+        <div class="page-header"><div class="page-header-left"><div class="page-eyebrow">Step 08</div><div class="page-title">Predict</div><div class="page-desc">Run inference with any trained model — manually or batch CSV.</div></div></div>
+        <div class="card accent">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#129302;</div>Active Model</div></div>
+          <div class="card-body"><div class="flex-center gap-12"><div class="form-group" style="min-width:220px"><label>Use Model</label><select id="predict-model-sel"></select></div><span class="badge badge-amber" id="active-model-badge">None</span></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#9999;&#65039;</div>Manual Prediction</div></div>
+          <div class="card-body"><div class="form-row" id="manual-inputs" style="row-gap:14px"></div></div>
+          <div class="card-footer"><button class="btn btn-primary" onclick="predictManual()">&#9654; Run Prediction</button></div>
+        </div>
+        <div class="card hidden" id="manual-result-card"><div class="card-header"><div class="card-title"><div class="card-icon">&#127919;</div>Result</div></div><div class="card-body" id="manual-result"></div></div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#128194;</div>Batch Prediction (CSV)</div></div>
+          <div class="card-body">
+            <div class="drop-zone" style="padding:28px" onclick="document.getElementById('batch-file').click()"><div class="drop-title" style="font-size:15px">Upload CSV for batch prediction</div><div class="drop-sub">Must include all feature columns used during training</div></div>
+            <input type="file" id="batch-file" accept=".csv" style="display:none" onchange="predictBatch(this)">
+          </div>
+          <div class="card-body hidden" id="batch-result"></div>
+        </div>
+      </div>
+
+      <!-- PAGE 9: DEPLOY -->
+      <div class="page-view hidden" id="page-deploy">
+        <div class="page-header"><div class="page-header-left"><div class="page-eyebrow">Step 09</div><div class="page-title">Deploy</div><div class="page-desc">Save named deployments with custom titles. Each gets its own prediction form.</div></div></div>
+        <div class="card accent">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#128640;</div>Create Deployment</div></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group"><label>Deployment Name (slug)</label><input type="text" id="dep-name" placeholder="house_price_v1"></div>
+              <div class="form-group"><label>Model</label><select id="dep-model"></select></div>
+              <div class="form-group"><label>Page Title</label><input type="text" id="dep-title" placeholder="House Price Predictor" value="ML Model"></div>
+              <div class="form-group"><label>Page Heading</label><input type="text" id="dep-heading" placeholder="Predict House Price" value="Predict"></div>
+            </div>
+            <div class="form-group mt-12"><label>Description</label><textarea id="dep-desc" rows="2" placeholder="Short description of what this model predicts…"></textarea></div>
+          </div>
+          <div class="card-footer"><button class="btn btn-primary" onclick="createDeployment()">&#128640; Create Deployment</button></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><div class="card-icon">&#128203;</div>Active Deployments</div><button class="btn btn-ghost btn-sm" onclick="loadDeployments()">&#8634; Refresh</button></div>
+          <div class="card-body" id="deployments-list"><p class="text-muted text-sm">No deployments yet.</p></div>
+        </div>
+        <div class="hidden" id="deploy-predict-panel">
+          <div class="card" style="border-color:var(--emerald);box-shadow:0 0 20px rgba(52,211,153,0.08)">
+            <div class="card-header" style="background:var(--emerald-pale)">
+              <div class="card-title" style="color:var(--emerald)"><div class="card-icon" style="background:rgba(52,211,153,0.15);border-color:rgba(52,211,153,0.2)">&#127760;</div><span id="dp-page-title">Deployment</span><span class="text-muted" style="font-size:13px;font-weight:400;margin-left:8px" id="dp-heading-text"></span></div>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('deploy-predict-panel').classList.add('hidden')">&#10005; Close</button>
+            </div>
+            <div class="card-body"><p class="text-sm text-muted mb-16" id="dp-desc"></p><div class="form-row" id="dp-inputs" style="row-gap:14px"></div></div>
+            <div class="card-footer"><button class="btn btn-primary btn-lg" onclick="deployPredict()">&#9654; Predict</button></div>
+          </div>
+          <div class="hidden" id="dp-result-card" style="margin-top:12px"><div class="card"><div class="card-header"><div class="card-title"><div class="card-icon">&#127919;</div>Result</div></div><div class="card-body" id="dp-result"></div></div></div>
+        </div>
+      </div>
+
+    </div><!-- page-content -->
+  </div><!-- main -->
+</div><!-- shell -->
+
+<!-- JS modules: state first, then utils, then feature pages, then results/deploy -->
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/import.js"></script>
+<script src="js/eda.js"></script>
+<script src="js/pipeline.js"></script>
+<script src="js/results.js"></script>
+<script src="js/deploy.js"></script>
+</body>
+</html>
