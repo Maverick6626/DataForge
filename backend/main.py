@@ -19,15 +19,23 @@ app.include_router(data_router.router)
 app.include_router(train_router.router)
 app.include_router(predict_router.router)
 
-
-# Serve frontend as static files when running in Docker
-# (frontend dir is at ../frontend relative to backend)
-_FRONTEND = os.path.join(os.path.dirname(__file__), "..", "frontend")
+# Serve frontend static assets when running in Docker.
+# The frontend dir sits one level above the backend dir.
+# index.html references css/ and js/ as relative paths, so mount each
+# subdirectory at its exact URL prefix to match those requests.
+_FRONTEND = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 if os.path.isdir(_FRONTEND):
+    app.mount("/css", StaticFiles(directory=os.path.join(_FRONTEND, "css")), name="css")
+    app.mount("/js",  StaticFiles(directory=os.path.join(_FRONTEND, "js")),  name="js")
+
     @app.get("/")
     def root():
         return FileResponse(os.path.join(_FRONTEND, "index.html"))
-    app.mount("/static", StaticFiles(directory=_FRONTEND), name="static")
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon():
+        ico = os.path.join(_FRONTEND, "favicon.ico")
+        return FileResponse(ico) if os.path.isfile(ico) else FileResponse(os.devnull, media_type="image/x-icon")
 
 
 @app.get("/health")
@@ -41,9 +49,13 @@ def list_sessions():
     out = []
     for sid, sess in SESSIONS.items():
         df = sess.get("df")
-        out.append({"session_id": sid, "name": sess.get("name", sid),
-                    "n_rows": int(df.shape[0]) if df is not None else 0,
-                    "n_cols": int(df.shape[1]) if df is not None else 0,
-                    "best_model": sess.get("best_model"), "task": sess.get("task"),
-                    "deployments": list(sess.get("deployments", {}).keys())})
+        out.append({
+            "session_id":  sid,
+            "name":        sess.get("name", sid),
+            "n_rows":      int(df.shape[0]) if df is not None else 0,
+            "n_cols":      int(df.shape[1]) if df is not None else 0,
+            "best_model":  sess.get("best_model"),
+            "task":        sess.get("task"),
+            "deployments": list(sess.get("deployments", {}).keys()),
+        })
     return {"sessions": out}
