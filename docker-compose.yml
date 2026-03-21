@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────────
+# DataForge — Docker Compose
+#
+# Usage:
+#   docker compose up              # build and start
+#   docker compose up --build      # rebuild then start
+#   docker compose up -d           # run in background
+#   docker compose down            # stop and remove containers
+#   docker compose logs -f         # follow live logs
+#
+# Access:
+#   http://localhost:8000          # app (frontend + API)
+#   http://localhost:8000/docs     # API docs (Swagger)
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  dataforge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dataforge:latest
+    container_name: dataforge
+    ports:
+      - "8000:8000"
+    environment:
+      # Set to "production" to disable auto-reload
+      - APP_ENV=production
+    volumes:
+      # Optional: persist uploaded files and model artefacts across restarts
+      # Remove this if you want a fully ephemeral container
+      - dataforge_data:/tmp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ── Dev profile: hot-reload backend, live-mount source ───────────
+  dataforge-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dataforge:latest
+    container_name: dataforge-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+    volumes:
+      # Mount source code for live reload during development
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    profiles:
+      - dev
+
+volumes:
+  dataforge_data:
+    driver: local

@@ -1,6 +1,9 @@
 """DataForge API — entry point."""
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from core.config import SESSIONS
 from core.models import HAS_XGB, HAS_LGB, HAS_CAT
@@ -15,6 +18,16 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
 app.include_router(data_router.router)
 app.include_router(train_router.router)
 app.include_router(predict_router.router)
+
+
+# Serve frontend as static files when running in Docker
+# (frontend dir is at ../frontend relative to backend)
+_FRONTEND = os.path.join(os.path.dirname(__file__), "..", "frontend")
+if os.path.isdir(_FRONTEND):
+    @app.get("/")
+    def root():
+        return FileResponse(os.path.join(_FRONTEND, "index.html"))
+    app.mount("/static", StaticFiles(directory=_FRONTEND), name="static")
 
 
 @app.get("/health")

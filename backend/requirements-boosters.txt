@@ -1,0 +1,5 @@
+# DataForge — Optional boosting libraries
+# Installed separately so failures don't break the core install
+xgboost>=2.0.0
+lightgbm>=4.0.0
+catboost>=1.2.0

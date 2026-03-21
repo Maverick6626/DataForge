@@ -1,5 +1,8 @@
 /* Shared application state */
-const API = 'http://localhost:8000';
+// Use relative URL when served by Docker (same origin), fallback for local dev
+const API = window.location.port === '' || window.location.protocol === 'file:'
+  ? 'http://localhost:8000'
+  : window.location.origin;
 
 const S = {
   sessionId:       null,
