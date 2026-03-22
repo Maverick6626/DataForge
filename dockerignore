@@ -10,6 +10,7 @@ __pycache__/
 dist/
 build/
 *.egg
+catboost_info/
 
 # Virtual environments (Docker creates its own)
 .venv/
