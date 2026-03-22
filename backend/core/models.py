@@ -87,7 +87,7 @@ def get_models(task: str, seed: int) -> Dict[str, Any]:
         }
         if HAS_XGB: m["XGBoost"]  = xgb.XGBClassifier(n_estimators=200, random_state=seed, n_jobs=-1, eval_metric="logloss", verbosity=0)
         if HAS_LGB: m["LightGBM"] = lgb.LGBMClassifier(n_estimators=200, random_state=seed, n_jobs=-1, verbose=-1)
-        if HAS_CAT: m["CatBoost"] = CatBoostClassifier(iterations=200, random_seed=seed, verbose=0)
+        if HAS_CAT: m["CatBoost"] = CatBoostClassifier(iterations=200, allow_writing_files=False, random_seed=seed, verbose=0)
     else:
         m = {
             "Linear Regression":   LinearRegression(n_jobs=-1),
