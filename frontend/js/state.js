@@ -1,6 +1,9 @@
 /* Shared application state */
-// Use relative URL when served by Docker (same origin), fallback for local dev
-const API = window.location.port === '' || window.location.protocol === 'file:'
+// API base URL resolution:
+//   - file://  → opened directly in browser without a server, hit localhost:8000
+//   - localhost / 127.0.0.1 on any port → use same origin (Docker or `uvicorn` direct)
+//   - HF Spaces / any other host → use same origin (backend and frontend share the origin)
+const API = (window.location.protocol === 'file:')
   ? 'http://localhost:8000'
   : window.location.origin;
 

@@ -59,16 +59,26 @@ async def train_stream(req: TrainReq):
             sess = SESSIONS[req.session_id]
             df   = sess["df"].copy()
 
-            bad = [f for f in req.features + [req.target] if f not in df.columns]
-            if bad:
-                yield log(f"Missing columns: {bad}", "error"); return
+            # Separate missing features from missing target
+            missing_target = req.target not in df.columns
+            if missing_target:
+                yield log(f"Target column '{req.target}' not found in dataset", "error"); return
+
+            # Silently drop any requested features that no longer exist (e.g. deleted in clean step)
+            missing_feats = [f for f in req.features if f not in df.columns and f != req.target]
+            if missing_feats:
+                yield log(f"Ignoring {len(missing_feats)} stale feature(s) not in dataset: {missing_feats}", "warn")
+
+            valid_features = [f for f in req.features if f in df.columns and f != req.target]
+            if not valid_features:
+                yield log("No valid features remaining after filtering — check your feature selection", "error"); return
 
             yield log(f"Dataset: {len(df):,} × {len(df.columns)}")
             yield prog(5, "Resolving task…")
             await asyncio.sleep(0.01)
 
             task    = resolve_task(df, req.target, req.task_type)
-            feats   = [f for f in req.features if f in df.columns and f != req.target]
+            feats   = valid_features
             yield log(f"Task: {task}  Features: {len(feats)}")
 
             X = df[feats]

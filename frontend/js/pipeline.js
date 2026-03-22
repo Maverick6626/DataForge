@@ -50,7 +50,11 @@ async function runClean() {
     const d = await r.json();
     if (!r.ok) throw new Error(d.detail);
     d.steps.forEach(s => addLog(log, s.message, s.type));
+    const newColSet = new Set(d.columns);
     S.columns = d.columns; S.nRows = d.n_rows; S.missing = {};
+    // Remove any dropped columns from selectedFeatures so training doesn't send stale cols
+    S.selectedFeatures = new Set([...S.selectedFeatures].filter(c => newColSet.has(c)));
+    S.droppedCols.clear();
     toast('Clean complete', `${fmt(d.n_rows)} rows remaining`, 'success');
     setTimeout(() => goTo('eda'), 700);
   } catch (e) { addLog(log, 'Error: ' + e.message, 'error'); toast('Failed', e.message, 'error'); }

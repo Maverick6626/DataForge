@@ -1,5 +1,6 @@
 """Data routes: upload, sample, clean, EDA."""
 import io
+import logging
 import uuid
 
 import numpy as np
@@ -17,6 +18,7 @@ from core.data import (
 )
 
 router = APIRouter()
+logger = logging.getLogger("dataforge.data")
 
 
 # ── Upload / samples ───────────────────────────────────────────────────────────
@@ -28,8 +30,11 @@ async def upload(file: UploadFile = File(...)):
         sid = uuid.uuid4().hex[:8]
         SESSIONS[sid] = {"df_raw": df.copy(), "df": df.copy(),
                           "name": file.filename, "deployments": {}}
+        logger.info("Uploaded '%s' → session %s (%d rows × %d cols)",
+                    file.filename, sid, len(df), len(df.columns))
         return df_info(df, sid)
     except Exception as e:
+        logger.exception("Upload failed for file '%s'", file.filename)
         raise HTTPException(400, f"CSV error: {e}")
 
 
@@ -39,6 +44,7 @@ def sample_ep(name: str):
     sid = uuid.uuid4().hex[:8]
     SESSIONS[sid] = {"df_raw": df.copy(), "df": df.copy(),
                       "name": name, "deployments": {}}
+    logger.info("Loaded sample '%s' → session %s", name, sid)
     return df_info(df, sid)
 
 

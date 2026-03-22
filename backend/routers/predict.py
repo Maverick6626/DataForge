@@ -28,17 +28,33 @@ def _get_pipe(sess: dict, model_name: Optional[str]):
 
 
 def _predict(sess: dict, pipe, df_in: pd.DataFrame, name: str) -> dict:
+    # Coerce dtypes to match what the pipeline was trained on, so string
+    # inputs like "3" for a numeric column don't break the preprocessor.
+    df_ref = sess.get("df")
+    if df_ref is not None:
+        for col in df_in.columns:
+            if col in df_ref.columns:
+                try:
+                    if pd.api.types.is_numeric_dtype(df_ref[col]):
+                        df_in[col] = pd.to_numeric(df_in[col], errors="coerce")
+                except Exception:
+                    pass
+
     preds = pipe.predict(df_in)
     le    = sess.get("label_encoder")
-    if le:
+    if le is not None:
+        # Always decode to original labels (e.g. "survived" not 1, "setosa" not 0)
         preds = le.inverse_transform(preds.astype(int))
+
     result = {"model": name, "predictions": preds.tolist()}
+
     if sess.get("task") == "classification" and hasattr(pipe, "predict_proba"):
         try:
             probs   = pipe.predict_proba(df_in)
-            classes = le.classes_.tolist() if le else list(range(probs.shape[1]))
+            # Use original class names (not encoded integers) as probability keys
+            classes = le.classes_.tolist() if le is not None else list(range(probs.shape[1]))
             result["probabilities"] = [
-                dict(zip(map(str, classes), r.tolist())) for r in probs
+                dict(zip(map(str, classes), [round(v, 4) for v in r.tolist()])) for r in probs
             ]
         except Exception:
             pass

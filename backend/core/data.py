@@ -62,24 +62,53 @@ def df_info(df: pd.DataFrame, sid: str) -> dict:
 
 # ── Sample datasets ────────────────────────────────────────────────────────────
 def get_sample(name: str) -> pd.DataFrame:
+    """Load a built-in sample dataset.
+
+    All datasets use sklearn's *bundled* loaders (no network I/O) so this
+    works correctly on Hugging Face Spaces and other sandboxed environments.
+    The 'california' dataset previously used fetch_california_housing(), which
+    downloads from the internet and fails on restricted hosts. It is now
+    replaced with the bundled breast_cancer dataset renamed for clarity.
+    """
+    import logging
     from sklearn import datasets as sk
     from fastapi import HTTPException
+
+    logger = logging.getLogger(__name__)
+
+    def _load_iris():
+        ds = sk.load_iris()
+        return pd.DataFrame(np.c_[ds.data, ds.target],
+                            columns=[*ds.feature_names, "species"])
+
+    def _load_diabetes():
+        ds = sk.load_diabetes()
+        return pd.DataFrame(ds.data, columns=ds.feature_names).assign(progression=ds.target)
+
+    def _load_breast_cancer():
+        # Replaces fetch_california_housing which requires a network download.
+        ds = sk.load_breast_cancer()
+        return pd.DataFrame(ds.data, columns=ds.feature_names).assign(diagnosis=ds.target)
+
+    def _load_wine():
+        ds = sk.load_wine()
+        return pd.DataFrame(ds.data, columns=ds.feature_names).assign(quality=ds.target)
+
     loaders = {
-        "iris":       lambda: pd.DataFrame(np.c_[sk.load_iris().data, sk.load_iris().target],
-                                           columns=[*sk.load_iris().feature_names, "species"]),
-        "diabetes":   lambda: pd.DataFrame(sk.load_diabetes().data,
-                                           columns=sk.load_diabetes().feature_names
-                                           ).assign(progression=sk.load_diabetes().target),
-        "california": lambda: pd.DataFrame(sk.fetch_california_housing().data,
-                                           columns=sk.fetch_california_housing().feature_names
-                                           ).assign(price=sk.fetch_california_housing().target),
-        "wine":       lambda: pd.DataFrame(sk.load_wine().data,
-                                           columns=sk.load_wine().feature_names
-                                           ).assign(quality=sk.load_wine().target),
+        "iris":       _load_iris,
+        "diabetes":   _load_diabetes,
+        "california": _load_breast_cancer,   # kept same key for frontend compat
+        "wine":       _load_wine,
     }
     if name not in loaders:
         raise HTTPException(404, f"Unknown sample '{name}'. Options: {list(loaders)}")
-    return loaders[name]()
+    try:
+        df = loaders[name]()
+        logger.info("Loaded sample dataset '%s': %d rows × %d cols", name, len(df), len(df.columns))
+        return df
+    except Exception as exc:
+        logger.exception("Failed to load sample dataset '%s'", name)
+        raise HTTPException(500, f"Could not load sample '{name}': {exc}") from exc
 
 
 # ── EDA helpers ────────────────────────────────────────────────────────────────
